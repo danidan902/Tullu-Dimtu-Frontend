@@ -210,7 +210,7 @@ const AdmissionForm = () => {
         if (formData.paymentReceipt) formDataToSend.append('paymentReceipt', formData.paymentReceipt);
         
         // Send data to backend
-        const response = await axios.post('http://localhost:5001/api/admissions', formDataToSend, {
+        const response = await axios.post('https://tullu-dimtu-1.onrender.com/api/admissions', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
