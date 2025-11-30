@@ -58,7 +58,13 @@ const AdmissionForm = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState(initialFormData);
   const [errors, setErrors] = useState({});
-  const fileInputRef = useRef(null);
+  const fileInputRefs = {
+    photo: useRef(null),
+    birthCertificate: useRef(null),
+    transcript: useRef(null),
+    transferCertificate: useRef(null),
+    paymentReceipt: useRef(null)
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState(null);
@@ -67,6 +73,42 @@ const AdmissionForm = () => {
   const grades = ['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'];
   const relationships = ['Father', 'Mother', 'Guardian', 'Other'];
   const nationalities = ['Ethiopian', 'Other'];
+
+  const handleFileChange = (fieldName, event) => {
+    const file = event.target.files[0];
+    
+    if (file) {
+      // Validate file type based on field (NO SIZE VALIDATION)
+      let validTypes = [];
+      
+      if (fieldName === 'photo') {
+        validTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+      } else if (['birthCertificate', 'transcript', 'transferCertificate', 'paymentReceipt'].includes(fieldName)) {
+        validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+      }
+      
+      if (validTypes.length > 0 && !validTypes.includes(file.type)) {
+        const allowedTypes = validTypes.includes('application/pdf') ? 'JPEG, PNG, or PDF' : 'JPEG or PNG';
+        setErrors(prev => ({ ...prev, [fieldName]: `Please select a ${allowedTypes} file` }));
+        return;
+      }
+      
+      // Clear any previous errors
+      setErrors(prev => ({ ...prev, [fieldName]: '' }));
+      
+      // Update form data (accept any file size)
+      setFormData(prev => ({
+        ...prev,
+        [fieldName]: file
+      }));
+    }
+  };
+
+  const handleFileClick = (fieldName) => {
+    if (fileInputRefs[fieldName]?.current) {
+      fileInputRefs[fieldName].current.click();
+    }
+  };
 
   // Mouse move effect for background
   useEffect(() => {
@@ -164,7 +206,7 @@ const AdmissionForm = () => {
         
         formDataToSend.append('paymentMethod', currentMethod.name);
         
-        const response = await axios.post('http://localhost:5001/api/admissions', formDataToSend, {
+        const response = await axios.post('https://tullu-dimtu-1.onrender.com/api/admissions', formDataToSend, {
           headers: {
             'Content-Type': 'multipart/form-data'
           }
@@ -184,11 +226,6 @@ const AdmissionForm = () => {
         setIsSubmitting(false);
       }
     }
-  };
-
-  const handleFileClick = (fieldName) => {
-    fileInputRef.current.name = fieldName;
-    fileInputRef.current.click();
   };
 
   // Floating background elements
@@ -402,13 +439,17 @@ const AdmissionForm = () => {
             </div>
 
             <form onSubmit={handleSubmit}>
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                onChange={handleChange}
-                className="hidden"
-                accept="image/*,.pdf"
-              />
+              {/* Hidden file inputs for each file field */}
+              {Object.keys(fileInputRefs).map(fieldName => (
+                <input 
+                  key={fieldName}
+                  type="file" 
+                  ref={fileInputRefs[fieldName]}
+                  onChange={(e) => handleFileChange(fieldName, e)}
+                  className="hidden"
+                  accept={fieldName === 'photo' ? 'image/jpeg,image/jpg,image/png' : 'image/jpeg,image/jpg,image/png,application/pdf'}
+                />
+              ))}
 
               <AnimatePresence mode="wait">
                 {submitSuccess ? (
@@ -730,7 +771,7 @@ const FormStep1 = ({ formData, errors, handleChange, handleFileClick, nationalit
           </motion.p>
         )}
         <p className="mt-2 text-xs text-gray-400">
-          JPEG or PNG, max 2MB
+          JPEG or PNG (Any file size accepted)
         </p>
       </motion.div>
     </div>
@@ -963,9 +1004,9 @@ const FormStep4 = ({ formData, errors, handleFileClick }) => (
     
     <div className="grid grid-cols-1 gap-6">
       {[
-        { id: 'birthCertificate', label: 'Birth Certificate *', description: 'PDF or scanned image, max 5MB' },
-        { id: 'transcript', label: 'Transcript/Report Card *', description: 'PDF or scanned image, max 5MB' },
-        { id: 'transferCertificate', label: 'Transfer Certificate (If Applicable)', description: 'PDF or scanned image, max 5MB' },
+        { id: 'birthCertificate', label: 'Birth Certificate *', description: 'PDF or scanned image (Any file size accepted)' },
+        { id: 'transcript', label: 'Transcript/Report Card *', description: 'PDF or scanned image (Any file size accepted)' },
+        { id: 'transferCertificate', label: 'Transfer Certificate (If Applicable)', description: 'PDF or scanned image (Any file size accepted)' },
       ].map((doc, index) => (
         <motion.div
           key={doc.id}
@@ -1200,7 +1241,7 @@ const FormStep5 = ({ formData, errors, handleFileClick, activeMethod, setActiveM
               </motion.p>
             )}
             <p className="mt-2 text-xs text-gray-400">
-              JPEG, PNG or PDF, max 5MB
+              JPEG, PNG or PDF (Any file size accepted)
             </p>
           </div>
         </motion.div>
